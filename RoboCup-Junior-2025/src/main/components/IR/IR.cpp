@@ -6,11 +6,11 @@ const int NUM_IR_PINS = 16;
 
 double readings[NUM_IR_PINS];
 
-void IR::initIR() {
+void IR::initIR() { // initialises IR and sets all pins to input
   for (unsigned int i = 0; i < arrayLength(pins); i++) {
     pinMode(pins[i], INPUT);
   }
-}
+} 
 
 void IR::updateReadings() {
   double minVal = INT_MAX;
