@@ -23,12 +23,12 @@ private:
   Compass compass;
 
   // 1
-  Motor motor_FR{ 1, 2 }; //M1
-  Motor motor_BR{ 3, 4 }; //M2
-  Motor motor_BL{ 5, 6 }; //M3
-  Motor motor_FL{ 7, 8 }; //M4
+  Motor motor_BR{ 7, 8 };
+  Motor motor_FR{ 6, 5 };
+  Motor motor_BL{ 4, 3 };
+  Motor motor_FL{ 2, 1 };
 
-  // //2 (fries in the bag) //fries in the bag pt2
+  // //2 (fries in the bag)
   // Motor motor_BR{5, 6};
   // Motor motor_FR{4, 3};
   // Motor motor_BL{1, 2};
