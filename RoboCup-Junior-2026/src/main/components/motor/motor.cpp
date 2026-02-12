@@ -1,5 +1,5 @@
 #include "motor.h"
-
+#include <Arduino.h>
 Motor::Motor(unsigned int pin_c, unsigned int pin_cc, uint16_t pwmMax)
     : pin_c(pin_c), 
       pin_cc(pin_cc), 
