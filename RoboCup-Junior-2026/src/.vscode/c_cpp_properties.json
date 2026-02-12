@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+
+            "includePath": [
+                "${workspaceFolder}/**",
+            
+                "C:/Users/lucaw/AppData/Local/Arduino15/packages/teensy/hardware/avr/1.59.0/cores/**",
+                "C:/Users/lucaw/AppData/Local/Arduino15/packages/teensy/hardware/avr/1.59.0/cores/teensy4/**",
+                "C:/Users/lucaw/AppData/Local/Arduino15/packages/teensy/hardware/avr/1.59.0/libraries/**",
+                "C:/Users/lucaw/Documents/Arduino/libraries/**"
+
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "ARDUINO=10819",
+                "TEENSYDUINO=159",
+                "CORE_TEENSY",
+                "ARDUINO_TEENSY41"
+            ],
+
+            "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
+            "intelliSenseMode": "gcc-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
