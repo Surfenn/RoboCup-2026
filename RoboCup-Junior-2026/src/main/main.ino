@@ -1,17 +1,17 @@
 #include <Arduino.h>
 #include "./components/IR/IR.h"
-//#include "./components/IR/IR.cpp"
+#include "./components/IR/IR.cpp"
 #include "./components/movement/movement.h"
-//#include "./components/movement/movement.cpp"
+#include "./components/movement/movement.cpp"
 #include "./components/colorsensor/colorsensor.h"
-//#include "./components/colorsensor/colorsensor.cpp"
-#include "./components/camera/camera.h"
+#include "./components/colorsensor/colorsensor.cpp"
+// #include "./components/camera/camera.h"
 
 Movement m;
 IR ir;
 ColorSensor c;
 Compass cmp;
-Camera camera(70.0);
+// Camera camera(70.0);
 
 void attack_w_color_sensor() {
   int speed = 100;
@@ -19,7 +19,7 @@ void attack_w_color_sensor() {
   c.updateReadings();
   ir.updateReadings();
 
-  float camAngle = camera.calculateRotationAngle();
+  // float camAngle = camera.calculateRotationAngle();
   float curr_ball_angle = ir.getBallAngle();
   // Serial.println(curr_ball_angle);
 
@@ -58,7 +58,7 @@ void setup() {
   cmp.initialize();
   c.init();
 
-  camera.initialize();
+  // camera.initialize();
 }
 
 void loop() {
