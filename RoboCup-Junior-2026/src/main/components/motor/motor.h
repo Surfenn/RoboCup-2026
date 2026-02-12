@@ -10,7 +10,7 @@ public:
    * @param `pin_c` the pin that, when held high and the other held low, roatates the motor clockwise.
    * @param `pin_cc` the pin that, when held high and the other held low, roatates the motor counter-clockwise.
    */
-  Motor(unsigned int pin_c, unsigned int pin_cc);
+  Motor(unsigned int pin_c, unsigned int pin_cc, uint16_t pwmMax = 255);
 
   /**
    * Spins the wheel at a certain speed. If the integer for speed that is given is > 0, the wheel will spin clockwise. If the opposite, the wheel will spin counter-clockwise.
@@ -25,8 +25,13 @@ public:
 private:
   unsigned int pin_c;
   unsigned int pin_cc;
-  int speed;
-  bool is_breaking;
+
+  uint16_t pwm_max;
+
+  uint16_t last_c;
+  uint16_t last_cc;
+  // int speed;
+  // bool is_breaking;
 };
 
 #endif
