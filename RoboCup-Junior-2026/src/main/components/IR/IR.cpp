@@ -1,3 +1,4 @@
+.
 #include "IR.h"
 #include <limits.h>
 
