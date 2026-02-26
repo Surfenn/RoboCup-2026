@@ -23,9 +23,9 @@ private:
   Compass compass;
 
   // 1
-  Motor motor_FR{ 4, 3 }; //M1
-  Motor motor_BR{ 5, 6 }; //M2
-  Motor motor_BL{ 2, 1 }; //M3
+  Motor motor_FR{ 1, 2 }; //M1
+  Motor motor_BR{ 3, 4 }; //M2
+  Motor motor_BL{ 5, 6 }; //M3
   Motor motor_FL{ 7, 8 }; //M4
 
   // //2 (fries in the bag) //fries in the bag pt2

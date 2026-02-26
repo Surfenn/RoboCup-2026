@@ -1,23 +1,22 @@
 #ifndef COMPASS_H
 #define COMPASS_H
 
-#include "Adafruit_BNO055.h"
+#include <Arduino.h>
 #include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include "Adafruit_BNO055.h"
 
 class Compass {
 public:
-  /**
-   * Initialize pins to Adafruit_BNO055
-   */
   void initialize();
 
-  /**
-   * Returns absolute (max 180 degrees) x-axis angle 
-   */
+  // Returns heading as -180 to +180 degrees.
+  // Returns NAN if not initialized.
   float readCompass();
 
 private:
-  Adafruit_BNO055 bno{55, 0x28, &Wire};
+  Adafruit_BNO055 bno{55, 0x29, &Wire};
+  bool ok = false;
 };
 
 #endif

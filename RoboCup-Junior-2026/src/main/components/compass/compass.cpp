@@ -2,31 +2,31 @@
 
 void Compass::initialize() {
   Wire.begin();
+  delay(10);
+
   if (!bno.begin()) {
     Serial.println("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
-    while (1)
-      ;
+    ok = false;
+    return;              // <-- DO NOT while(1); or your robot will never move
   }
+
+  ok = true;
+
   bno.setExtCrystalUse(true);
   bno.setMode(OPERATION_MODE_NDOF);
-  delay(500);
-
-  // uint8_t system, gyro, accel, mag;
-  // bno.getCalibration(&system, &gyro, &accel, &mag);
-  // Serial.print("CALIBRATION: Sys=");
-  // Serial.print(system);
-  // Serial.print(" Gyro=");
-  // Serial.print(gyro);
-  // Serial.print(" Accel=");
-  // Serial.print(accel);
-  // Serial.print(" Mag=");
-  // Serial.println(mag);
+  delay(50);
 }
 
 float Compass::readCompass() {
+  if (!ok) return NAN;
 
   sensors_event_t event;
   bno.getEvent(&event);
-  int angle = event.orientation.x;
-  return (angle > 180) ? angle - 360 : angle;
+
+  float heading = event.orientation.x; // should be 0..360
+  // Normalize
+  while (heading < 0) heading += 360.0f;
+  while (heading >= 360.0f) heading -= 360.0f;
+
+  return heading;
 }

@@ -62,7 +62,70 @@ void setup() {
 }
 
 void loop() {
+
+  // Serial.println("=== MOTOR DEBUG START ===");
+
+  // // Update sensors (so we can see values too)
+  // ir.updateReadings();
+  // c.updateReadings();
+
+  // float ballAngle = ir.getBallAngle();
+  // float avoidAngle = c.getAvoidAngle();
+
+  // Serial.print("Ball Angle: ");
+  // Serial.println(ballAngle);
+
+  // Serial.print("Avoid Angle: ");
+  // Serial.println(avoidAngle);
+
+  // Serial.println("Color Readings:");
+  // c.printReadings();
+
+  // Serial.println("Green Baseline:");
+  // c.printGreenValues();
+
+  // Serial.println("PULSE FORWARD 0°");
+  // m.basic_move_with_compass(0, 150);
+  // delay(500);
+
+  // Serial.println("BRAKE");
+  // m.brake();
+  // delay(300);
+
+  // Serial.println("PULSE RIGHT 90°");
+  // m.basic_move_with_compass(90, 150);
+  // delay(500);
+
+  // Serial.println("BRAKE");
+  // m.brake();
+  // delay(300);
+
+  // Serial.println("PULSE BACK 180°");
+  // m.basic_move_with_compass(180, 150);
+  // delay(500);
+
+  // Serial.println("BRAKE");
+  // m.brake();
+  // delay(300);
+
+  // Serial.println("PULSE LEFT 270°");
+  // m.basic_move_with_compass(270, 150);
+  // delay(500);
+
+  // Serial.println("BRAKE");
+  // m.brake();
+  // delay(1000);
+
+  // Serial.println("=== MOTOR DEBUG END ===\n");
+
+
+
+
   attack_w_color_sensor();
+
+
+
+
   // m.basic_move_with_compass_and_camera(0, 200, 0);
   // int speed = 100;
   // attack_w_color_sensor();
