@@ -323,7 +323,7 @@ void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotation
   // Serial.print(" | theta: ");
   // Serial.print(theta);
   // Serial.print(" | compass reading: ");
-  // Serial.println(reading);
+  // Serial.println(reading);    
 
   // Serial.println(map(speeds[0] + spin_index, 0, 300, 0, maxSpeed));
   // Serial.println(spin_index);

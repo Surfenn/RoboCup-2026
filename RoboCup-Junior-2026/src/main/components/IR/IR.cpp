@@ -1,7 +1,7 @@
 #include "IR.h"
 #include <limits.h>
 
-int pins[] = {23, 22, 21, 20, 19, 18, 15, 14, 41, 40, 39, 38, 27, 26, 25, 24}; //{23, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 16, 17, 20, 21, 22};
+int pins[] = {27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 15, 14, 41, 40, 39, 38}; //{38, 39, 20, 21, 22, 23, 31, 32, 24, 25, 26, 27, 14, 15, 16, 17}
 const int NUM_IR_PINS = 16;
 
 double readings[NUM_IR_PINS];
@@ -40,37 +40,37 @@ void IR::updateReadings() {
   }
 }
 
-// float* IR::getReadingsArr() {
-//   double* pwReadings = getPWsArr();
-//   float* pinReadings = new float[NUM_IR_PINS];
+float* IR::getReadingsArr() {
+  double* pwReadings = getPWsArr();
+  float* pinReadings = new float[NUM_IR_PINS];
 
-//   double minVal = INT_MAX;
-//   double maxVal = INT_MIN;
+  double minVal = INT_MAX;
+  double maxVal = INT_MIN;
 
-//   for (int i = 0; i < NUM_IR_PINS; i++) {
-//     if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
-//     if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
-//   }
+  for (int i = 0; i < NUM_IR_PINS; i++) {
+    if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
+    if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
+  }
 
-//   if (minVal == INT_MAX || maxVal == INT_MIN) {
-//     for (int i = 0; i < NUM_IR_PINS; i++) {
-//       pinReadings[i] = 0;
-//     }
-//     return pinReadings;
-//   }
+  if (minVal == INT_MAX || maxVal == INT_MIN) {
+    for (int i = 0; i < NUM_IR_PINS; i++) {
+      pinReadings[i] = 0;
+    }
+    return pinReadings;
+  }
 
-//   double range = maxVal - minVal;
-//   for (int i = 0; i < NUM_IR_PINS; i++) {
-//     if (pwReadings[i] == 0) {
-//       pinReadings[i] = 0;
-//     }
-//     else {
-//       pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range));
-//     }
-//   }
+  double range = maxVal - minVal;
+  for (int i = 0; i < NUM_IR_PINS; i++) {
+    if (pwReadings[i] == 0) {
+      pinReadings[i] = 0;
+    }
+    else {
+      pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range));
+    }
+  }
 
-//   return pinReadings;
-// }
+  return pinReadings;
+}
 
 float IR::getBallAngle() {
   int n = NUM_IR_PINS;
