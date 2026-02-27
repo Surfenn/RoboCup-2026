@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="OBJLoader">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/Libraries/Adafruit_BNO055/OBJLoader/OBJLoader.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,4 +1,5 @@
 #include "IR.h"
+#include <string>
 #include <limits.h>
 
 int pins[] = {27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 15, 14, 41, 40, 39, 38}; //{38, 39, 20, 21, 22, 23, 31, 32, 24, 25, 26, 27, 14, 15, 16, 17}
@@ -70,6 +71,19 @@ float* IR::getReadingsArr() {
   }
 
   return pinReadings;
+}
+
+std::string IR::stringBallReadings() {
+    string ballReadings = "";
+    currReadings = getReadingsArr();
+
+    for (int i = 0; i < NUM_IR_PINS; i++) {
+        ballReadings += "Pin #: " + std::to_string(pins[i]) +
+                        " has a value of: " + std::to_string(currReadings[i]) +
+                        "\n";
+    }
+
+    return ballReadings;
 }
 
 float IR::getBallAngle() {

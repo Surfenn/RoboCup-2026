@@ -1,5 +1,6 @@
 #ifndef IR_H
 #define IR_H
+#include <string>
 
 class IR {
   public:
@@ -11,6 +12,7 @@ class IR {
     void updateReadings();
     void initIR();
     float getBallAngle();
+    std::string stringBallReadings();
 
 };
 

@@ -124,6 +124,9 @@ void loop() {
   attack_w_color_sensor();
 
 
+  // Printing IR sensor information:
+  Serial.println(IR.stringBallReadings());
+  delay(500)
 
 
   // m.basic_move_with_compass_and_camera(0, 200, 0);
