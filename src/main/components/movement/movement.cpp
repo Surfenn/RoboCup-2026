@@ -30,8 +30,8 @@ void Movement::brake() {
 }
 
 void Movement::rotate(int speed) {
-  motor_FR.spin(speed);
-  motor_BR.spin(speed);
+  motor_FR.spin(-speed);
+  motor_BR.spin(-speed);
   motor_BL.spin(speed);
   motor_FL.spin(speed);
 }
@@ -126,9 +126,9 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
 
   // 7. Command the motors
   motor_FR.spin(-speeds[0]);
-  motor_BR.spin(speeds[1]);
+  motor_BR.spin(-speeds[1]);
   motor_BL.spin(speeds[2]);
-  motor_FL.spin(-speeds[3]);
+  motor_FL.spin(speeds[3]);
 
   // Serial.print("TR: ");
   // Serial.println(speeds[0]);
@@ -204,9 +204,9 @@ void Movement::basic_move_with_compass_and_camera(double theta,
 
   // 6. Drive the motors
   motor_FR.spin(-speeds[0]);
-  motor_BR.spin(speeds[1]);
+  motor_BR.spin(-speeds[1]);
   motor_BL.spin(speeds[2]);
-  motor_FL.spin(-speeds[3]);
+  motor_FL.spin(speeds[3]);
 }
 
 void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotationAngle) {
@@ -330,9 +330,9 @@ void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotation
 
   // Serial.println(speeds[0] + spin_index);
   motor_FR.spin(-speeds[0]);
-  motor_BR.spin(speeds[1]);
+  motor_BR.spin(-speeds[1]);
   motor_BL.spin(speeds[2]);
-  motor_FL.spin(-speeds[3]);
+  motor_FL.spin(speeds[3]);
 
   Serial.print("TR: ");
   Serial.println(speeds[0]);

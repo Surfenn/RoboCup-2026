@@ -5,14 +5,14 @@
 class IR {
   public:
 
-    // float* getReadingsArr();
-    // double* getPWsArr();
-    // void printReadingsArr();
+     float* getReadingsArr();
+     double* getPWsArr();
+     void printReadingsArr();
     // void printPWsArr();
     void updateReadings();
     void initIR();
     float getBallAngle();
-    std::string stringBallReadings();
+  //  std::string stringBallReadings();
 
 };
 

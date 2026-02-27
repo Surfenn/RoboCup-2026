@@ -1,10 +1,11 @@
-#include <Arduino.h>
-#include "./components/IR/IR.h"
 #include "./components/IR/IR.cpp"
-#include "./components/movement/movement.h"
-#include "./components/movement/movement.cpp"
-#include "./components/colorsensor/colorsensor.h"
+#include "./components/IR/IR.h"
 #include "./components/colorsensor/colorsensor.cpp"
+#include "./components/colorsensor/colorsensor.h"
+#include "./components/movement/movement.cpp"
+#include "./components/movement/movement.h"
+#include <Arduino.h>
+
 // #include "./components/camera/camera.h"
 
 Movement m;
@@ -14,10 +15,11 @@ Compass cmp;
 // Camera camera(70.0);
 
 void attack_w_color_sensor() {
-  int speed = 100;
- 
-  c.updateReadings();
-  ir.updateReadings();
+  int speed = 40; // Base movement speed for the robot
+
+  c.updateReadings();  // Refresh color sensor data to detect field boundary
+                       // lines
+  ir.updateReadings(); // Refresh IR sensor data to detect the ball's position
 
   // float camAngle = camera.calculateRotationAngle();
   float curr_ball_angle = ir.getBallAngle();
@@ -43,13 +45,11 @@ void attack_w_color_sensor() {
     m.basic_move_with_compass(avoidAngle, 175);
     delay(200);
     Serial.println("oob");
-  }
-  else {
+  } else {
     // m.basic_move_with_compass(curr_ball_angle, speed);
     m.basic_move_with_compass(curr_ball_angle, speed);
   }
 }
-
 
 void setup() {
   Serial.begin(9600);
@@ -118,16 +118,13 @@ void loop() {
 
   // Serial.println("=== MOTOR DEBUG END ===\n");
 
-
-
-
   attack_w_color_sensor();
 
-
+  ir.printReadingsArr();
+  delay(1000);
   // Printing IR sensor information:
-  Serial.println(IR.stringBallReadings());
-  delay(500)
-
+  // Serial.println(IR.stringBallReadings());
+  // delay(500)
 
   // m.basic_move_with_compass_and_camera(0, 200, 0);
   // int speed = 100;
@@ -151,7 +148,8 @@ void loop() {
 
   // float camAngle = camera.calculateRotationAngle();
 
-  // int angles[] = { 0, 180, 45, 225, 90, 270, 135, 315, 180, 0, 225, 45, 270, 90, 315, 135 };
+  // int angles[] = { 0, 180, 45, 225, 90, 270, 135, 315, 180, 0, 225, 45, 270,
+  // 90, 315, 135 };
 
   // Serial.println(camAngle);
 
