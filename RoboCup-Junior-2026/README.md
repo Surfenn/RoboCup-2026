@@ -1,4 +1,4 @@
-# RoboCup-Junior-2025
+# RoboCup-Junior-2026
 
 ## What is RoboCup Junior?
 
@@ -159,9 +159,8 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 
 ## Contributors
-  - Daniel Markusson
-  - Kyle Andersen
-  - Jacky Zhang
+  - Luca Wang
+  - Rudraa Manjrekar
 
 
 
@@ -174,4 +173,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Contact
 
-For questions, contact Daniel Markusson at markussondan@gmail.com.
+For questions, contact Luca Wang at lucawang626@gmail.com
