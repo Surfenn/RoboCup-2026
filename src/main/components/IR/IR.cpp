@@ -52,38 +52,38 @@ void IR::updateReadings() { // Defines the IR class function updateReadings(), w
   }
 }
 
-float* IR::getReadingsArr() { // Defines a function that returns a newly created float array of normalized readings.
-  double* pwReadings = getPWsArr(); // Calls getPWsArr() to get the raw pulse-width readings for all sensors.
-  float* pinReadings = new float[NUM_IR_PINS]; // Dynamically allocates a new float array to hold normalized values.
+// float* IR::getReadingsArr() { // Defines a function that returns a newly created float array of normalized readings.
+//   double* pwReadings = getPWsArr(); // Calls getPWsArr() to get the raw pulse-width readings for all sensors.
+//   float* pinReadings = new float[NUM_IR_PINS]; // Dynamically allocates a new float array to hold normalized values.
 
-  double minVal = INT_MAX; // Starts minVal at a very large value.
-  double maxVal = INT_MIN; // Starts maxVal at a very small value.
+//   double minVal = INT_MAX; // Starts minVal at a very large value.
+//   double maxVal = INT_MIN; // Starts maxVal at a very small value.
 
-  for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all pulse-width readings.
-    if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i]; // Updates minVal using the smallest nonzero reading.
-    if (pwReadings[i] > maxVal) maxVal = pwReadings[i]; // Updates maxVal using the largest reading.
-  }
+//   for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all pulse-width readings.
+//     if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i]; // Updates minVal using the smallest nonzero reading.
+//     if (pwReadings[i] > maxVal) maxVal = pwReadings[i]; // Updates maxVal using the largest reading.
+//   }
 
-  if (minVal == INT_MAX || maxVal == INT_MIN) { // Checks if no valid pulse-width readings were found.
-    for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all sensor indices.
-      pinReadings[i] = 0; // Sets every normalized reading in the new array to 0.
-    }
-    return pinReadings; // Returns the all-zero array immediately.
-  }
+//   if (minVal == INT_MAX || maxVal == INT_MIN) { // Checks if no valid pulse-width readings were found.
+//     for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all sensor indices.
+//       pinReadings[i] = 0; // Sets every normalized reading in the new array to 0.
+//     }
+//     return pinReadings; // Returns the all-zero array immediately.
+//   }
 
-  double range = maxVal - minVal; // Calculates the spread between the largest and smallest pulse widths.
+//   double range = maxVal - minVal; // Calculates the spread between the largest and smallest pulse widths.
 
-  for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all raw pulse-width readings again.
-    if (pwReadings[i] == 0) { // Checks if the reading is invalid or no signal was detected.
-      pinReadings[i] = 0; // Stores 0 for that sensor.
-    }
-    else { // Runs when the reading is valid.
-      pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range)); // Normalizes the pulse width into a value from 0 to 1.
-    }
-  }
+//   for (int i = 0; i < NUM_IR_PINS; i++) { // Loops through all raw pulse-width readings again.
+//     if (pwReadings[i] == 0) { // Checks if the reading is invalid or no signal was detected.
+//       pinReadings[i] = 0; // Stores 0 for that sensor.
+//     }
+//     else { // Runs when the reading is valid.
+//       pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range)); // Normalizes the pulse width into a value from 0 to 1.
+//     }
+//   }
 
-  return pinReadings; // Returns the newly allocated normalized readings array.
-}
+//   return pinReadings; // Returns the newly allocated normalized readings array.
+// }
 
 // std::string IR::stringBallReadings() { // Commented-out function that would return all readings as a formatted string.
 //     string ballReadings = ""; // Creates an empty string to build the result.

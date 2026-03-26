@@ -10,7 +10,7 @@ class Compass {
 public:
   void initialize();
 
-  // Returns heading as -180 to +180 degrees.
+  // Returns heading as 0 to 360 degrees.
   // Returns NAN if not initialized.
   float readCompass();
 
