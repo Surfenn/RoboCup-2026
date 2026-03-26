@@ -1,10 +1,10 @@
-#include "./components/IR/IR.cpp"
-#include "./components/IR/IR.h"
-#include "./components/colorsensor/colorsensor.cpp"
-#include "./components/colorsensor/colorsensor.h"
-#include "./components/movement/movement.cpp"
-#include "./components/movement/movement.h"
 #include <Arduino.h>
+#include "./components/IR/IR.h"
+#include "./components/IR/IR.cpp"
+#include "./components/colorsensor/colorsensor.h"
+#include "./components/colorsensor/colorsensor.cpp"
+#include "./components/movement/movement.h"
+#include "./components/movement/movement.cpp"
 
 // #include "./components/camera/camera.h"
 
