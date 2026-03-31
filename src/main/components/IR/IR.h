@@ -4,8 +4,8 @@
 class IR {
   public:
 
-    // float* getReadingsArr();
-    // double* getPWsArr();
+    float* getReadingsArr();
+    double* getPWsArr();
     // void printReadingsArr();
     // void printPWsArr();
     void updateReadings();

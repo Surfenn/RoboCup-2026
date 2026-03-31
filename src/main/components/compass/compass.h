@@ -17,7 +17,7 @@ public:
   float readCompass();
 
 private:
-  Adafruit_BNO055 bno{55, 0x29, &Wire};
+  Adafruit_BNO055 bno{55, 0x28, &Wire1};
 };
 
 #endif

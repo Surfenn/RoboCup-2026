@@ -26,6 +26,6 @@ float Compass::readCompass() {
 
   sensors_event_t event;
   bno.getEvent(&event);
-  int angle = event.orientation.x;
+  float angle = event.orientation.x;
   return (angle > 180) ? angle - 360 : angle;
 }

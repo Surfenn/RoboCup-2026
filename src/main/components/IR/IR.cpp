@@ -40,37 +40,37 @@ void IR::updateReadings() {
   }
 }
 
-// float* IR::getReadingsArr() {
-//   double* pwReadings = getPWsArr();
-//   float* pinReadings = new float[NUM_IR_PINS];
+float* IR::getReadingsArr() {
+  double* pwReadings = getPWsArr();
+  float* pinReadings = new float[NUM_IR_PINS];
 
-//   double minVal = INT_MAX;
-//   double maxVal = INT_MIN;
+  double minVal = INT_MAX;
+  double maxVal = INT_MIN;
 
-//   for (int i = 0; i < NUM_IR_PINS; i++) {
-//     if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
-//     if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
-//   }
+  for (int i = 0; i < NUM_IR_PINS; i++) {
+    if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
+    if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
+  }
 
-//   if (minVal == INT_MAX || maxVal == INT_MIN) {
-//     for (int i = 0; i < NUM_IR_PINS; i++) {
-//       pinReadings[i] = 0;
-//     }
-//     return pinReadings;
-//   }
+  if (minVal == INT_MAX || maxVal == INT_MIN) {
+    for (int i = 0; i < NUM_IR_PINS; i++) {
+      pinReadings[i] = 0;
+    }
+    return pinReadings;
+  }
 
-//   double range = maxVal - minVal;
-//   for (int i = 0; i < NUM_IR_PINS; i++) {
-//     if (pwReadings[i] == 0) {
-//       pinReadings[i] = 0;
-//     }
-//     else {
-//       pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range));
-//     }
-//   }
+  double range = maxVal - minVal;
+  for (int i = 0; i < NUM_IR_PINS; i++) {
+    if (pwReadings[i] == 0) {
+      pinReadings[i] = 0;
+    }
+    else {
+      pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range));
+    }
+  }
 
-//   return pinReadings;
-// }
+  return pinReadings;
+}
 
 float IR::getBallAngle() {
   int n = NUM_IR_PINS;
@@ -84,7 +84,7 @@ float IR::getBallAngle() {
 
     if (weight <= 0.0) continue;
 
-    float angleRad = (i * 2.0 * M_PI) / n;
+    float angleRad = (-i * 2.0 * M_PI) / n;
     float adjustedWeight = pow(weight, sharpen);
 
     weightedX += adjustedWeight * cos(angleRad);
@@ -97,16 +97,19 @@ float IR::getBallAngle() {
   float angle = atan2(weightedY, weightedX) * 180.0 / M_PI;
   if (angle < 0) angle += 360.0;
 
+  // angle += 30;   // adjust this value as needed
+  if (angle >= 360.0) angle -= 360.0;
+
   return angle;
 }
 
-// double* IR::getPWsArr() {
-//   double* pinReadings = new double[NUM_IR_PINS];
-//   for (unsigned int i = 0; i < arrayLength(pins); i++) {
-//     pinReadings[i] = pulseIn(pins[i], HIGH, 800);
-//   }
-//   return pinReadings;
-// }
+double* IR::getPWsArr() {
+  double* pinReadings = new double[NUM_IR_PINS];
+  for (unsigned int i = 0; i < arrayLength(pins); i++) {
+    pinReadings[i] = pulseIn(pins[i], HIGH, 800);
+  }
+  return pinReadings;
+}
 
 // void IR::printReadingsArr() {
 //   Serial.print("[ ");

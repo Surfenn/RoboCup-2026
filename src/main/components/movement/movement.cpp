@@ -87,32 +87,34 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
     return;
   }
 
-  theta -= 180;  // This needs to be commented out for bot #2
+  theta += 90.0;// This needs to be commented outw for bot #2
 
-  // 1. Read current heading (° in [0,360)) relative to north
+
+
+  // // 1. Read current heading (° in [0,360)) relative to north
   float heading = compass.readCompass();
   double error = heading;  // heading needs to be negative for bot #2, and positive for bot #1
 
 
-  // 3. Dead-zone and proportional gain
+  // // 3. Dead-zone and proportional gain
   const double deadzone = 5.0;  // ° within which we consider “on target”
   const double Kp = 0.5;        // tuning parameter: larger→faster correction
 
-  // 4. Compute rotational correction (zero inside dead-zone)
+  // // 4. Compute rotational correction (zero inside dead-zone)
   double headingCorrection = 0.0;
   if (fabs(error) > deadzone) {
-    // Negative sign so that positive error (clockwise drift) yields counter-clockwise bias
+  //   // Negative sign so that positive error (clockwise drift) yields counter-clockwise bias
     headingCorrection = -Kp * error;
   }
 
-  // catching ball
-  if (!isBetween(0 - COMPASS_BUFF, 0 + COMPASS_BUFF, theta)) {
-    if (theta <= 180) {
-      theta = theta + 40;
-    } else {
-      theta = theta - 40;
-    }
-  }
+  // // catching ball
+  // if (!isBetween(0 - COMPASS_BUFF, 0 + COMPASS_BUFF, theta)) {
+  //   if (theta <= 180) {
+  //     theta = theta + 40;
+  //   } else {
+  //     theta = theta - 40;
+  //   }
+  // }
 
   // 5. Existing translational wheel speeds (sinusoidal mixing)
   double baseSpeeds[4] = {
@@ -122,7 +124,7 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
     maxSpeed * sin(((theta + 90 - 40) * M_PI) / 180.0)   // FL
   };
 
-  // 6. Mix translation, user spin_index, and heading‐correction bias
+  // // 6. Mix translation, user spin_index, and heading‐correction bias
   double speeds[4];
   for (int i = 0; i < 4; ++i) {
     speeds[i] = baseSpeeds[i]
