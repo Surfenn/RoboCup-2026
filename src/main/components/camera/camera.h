@@ -1,7 +1,7 @@
 #include <cmath>
 #include <Pixy2SPI_SS.h>
 
-//Luca Wang 2026
+//Kyle Andersen 2025
 
 
 class Camera {

@@ -3,6 +3,11 @@
 #include "movement.h"
 #include <math.h>
 
+const int dirFR = 1; //M1
+const int dirBR = 1; //M2
+const int dirBL = -1; //M3
+const int dirFL = -1; //M4
+
 void Movement::initMovement() {
   compass.initialize();
 }
@@ -30,21 +35,21 @@ void Movement::brake() {
 }
 
 void Movement::rotate(int speed) {
-  motor_FR.spin(-speed);
-  motor_BR.spin(-speed);
-  motor_BL.spin(speed);
-  motor_FL.spin(speed);
+  motor_FR.spin(dirFR * speed);
+  motor_BR.spin(dirBR * speed);
+  motor_BL.spin(dirBL * speed);
+  motor_FL.spin(dirFL * speed);
 }
 
 void Movement::rotate_motor(int speed, String motor) {
   if (motor == "FR") {
-    motor_FR.spin(speed);
+    motor_FR.spin(dirFR * speed);
   } else if (motor == "BR") {
-    motor_BR.spin(speed);
+    motor_BR.spin(dirBR * speed);
   } else if (motor == "BL") {
-    motor_BL.spin(speed);
+    motor_BL.spin(dirBL * speed);
   } else if (motor == "FL") {
-    motor_FL.spin(speed);
+    motor_FL.spin(dirFL * speed);
   }
 }
 
@@ -82,7 +87,7 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
     return;
   }
 
-  theta += 180;  // This needs to be commented out for bot #2
+  theta -= 180;  // This needs to be commented out for bot #2
 
   // 1. Read current heading (° in [0,360)) relative to north
   float heading = compass.readCompass();
@@ -125,10 +130,10 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
   }
 
   // 7. Command the motors
-  motor_FR.spin(-speeds[0]);
-  motor_BR.spin(-speeds[1]);
-  motor_BL.spin(speeds[2]);
-  motor_FL.spin(speeds[3]);
+  motor_FR.spin(dirFR * speeds[0]);
+  motor_BR.spin(dirBR * speeds[1]);
+  motor_BL.spin(dirBL * speeds[2]);
+  motor_FL.spin(dirFL * speeds[3]);
 
   // Serial.print("TR: ");
   // Serial.println(speeds[0]);
@@ -151,7 +156,7 @@ void Movement::basic_move_with_compass_and_camera(double theta,
     return;
   }
 
-  // theta += 180;  // This needs to be commented out for bot #2
+  theta += 180;  // This needs to be commented out for bot #2
 
   // 1. Read current heading [0,360) relative to north
   float heading = compass.readCompass();
@@ -203,10 +208,10 @@ void Movement::basic_move_with_compass_and_camera(double theta,
   }
 
   // 6. Drive the motors
-  motor_FR.spin(-speeds[0]);
-  motor_BR.spin(-speeds[1]);
-  motor_BL.spin(speeds[2]);
-  motor_FL.spin(speeds[3]);
+  motor_FR.spin(dirFR * speeds[0]);
+  motor_BR.spin(dirBR * speeds[1]);
+  motor_BL.spin(dirBL * speeds[2]);
+  motor_FL.spin(dirFL * speeds[3]);
 }
 
 void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotationAngle) {
@@ -300,7 +305,7 @@ void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotation
     }
   }
 
-  if (max > maxSpeed) {
+  if (max != 0 && max < maxSpeed) {
     double scale = (double)(maxSpeed / max);
     for (int i = 0; i < 4; i++) {
       speeds[i] *= scale;
@@ -323,16 +328,16 @@ void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotation
   // Serial.print(" | theta: ");
   // Serial.print(theta);
   // Serial.print(" | compass reading: ");
-  // Serial.println(reading);    
+  // Serial.println(reading);
 
   // Serial.println(map(speeds[0] + spin_index, 0, 300, 0, maxSpeed));
   // Serial.println(spin_index);
 
   // Serial.println(speeds[0] + spin_index);
-  motor_FR.spin(-speeds[0]);
-  motor_BR.spin(-speeds[1]);
-  motor_BL.spin(speeds[2]);
-  motor_FL.spin(speeds[3]);
+  motor_FR.spin(dirFR * speeds[0]);
+  motor_BR.spin(dirBR * speeds[1]);
+  motor_BL.spin(dirBL * speeds[2]);
+  motor_FL.spin(dirFL * speeds[3]);
 
   Serial.print("TR: ");
   Serial.println(speeds[0]);

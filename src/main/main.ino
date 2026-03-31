@@ -1,51 +1,40 @@
-#include <Arduino.h>
 #include "./components/IR/IR.h"
 #include "./components/IR/IR.cpp"
-#include "./components/colorsensor/colorsensor.h"
-#include "./components/colorsensor/colorsensor.cpp"
 #include "./components/movement/movement.h"
 #include "./components/movement/movement.cpp"
 
-
 Movement m;
 IR ir;
-ColorSensor c;
-// Camera camera(70.0);
+Compass cmp;
 
-void attack_w_color_sensor() {
-  int speed = 80;
+void attack_ball() {
+  int speed = 120;  // adjust if needed
 
-  c.updateReadings();
   ir.updateReadings();
+  float ballAngle = ir.getBallAngle();
 
-  float curr_ball_angle = ir.getBallAngle();
-  float avoidAngle = c.getAvoidAngle();
+  Serial.print("Ball angle: ");
+  Serial.println(ballAngle);
 
-  Serial.println("green:");
-  c.printGreenValues();
-  Serial.println("readings:");
-  c.printReadings();
-
-  if (avoidAngle != -1) {
-    m.basic_move_with_compass(avoidAngle, 175);
-    delay(200);
-    Serial.println("oob");
-  } else {
-    m.basic_move_with_compass(curr_ball_angle, speed);
+  // If your IR returns -1 when no ball is found
+  if (ballAngle == -1) {
+    m.brake();
+    Serial.println("No ball detected");
+    return;
   }
+
+  // Move toward the ball
+  m.basic_move_with_compass(ballAngle, speed);
 }
 
-void setup() {
+void setup() {  
   Serial.begin(9600);
+
   ir.initIR();
   m.initMovement();
-  c.init();
-
-  // camera.initialize();
+  cmp.initialize();
 }
 
 void loop() {
-  attack_w_color_sensor();
-  ir.printReadingsArr();
-  delay(10);
+  attack_ball();
 }
