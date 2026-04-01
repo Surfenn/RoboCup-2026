@@ -23,16 +23,16 @@ private:
   Compass compass;
 
   // Robot 1 White
-  Motor motor_FR{ 1, 2 }; //M1
-  Motor motor_BR{ 4, 3 }; //M2
-  Motor motor_BL{ 5, 6 }; //M3
-  Motor motor_FL{ 7, 8 }; //M4
-
-  // Robot 2 No Tape (fries in the bag)
   // Motor motor_FR{ 1, 2 }; //M1
-  // Motor motor_BR{ 3, 4 }; //M2
+  // Motor motor_BR{ 4, 3 }; //M2
   // Motor motor_BL{ 5, 6 }; //M3
   // Motor motor_FL{ 7, 8 }; //M4
+
+  // // Robot 2 No Tape (fries in the bag)
+  Motor motor_FR{ 2, 1 }; //M1
+  Motor motor_BR{ 4, 3 }; //M2
+  Motor motor_BL{ 5, 6 }; //M3
+  Motor motor_FL{ 8, 7 }; //M4
 
   bool isBetween(int lower, int upper, int x);
   const unsigned int COMPASS_BUFF = 5;

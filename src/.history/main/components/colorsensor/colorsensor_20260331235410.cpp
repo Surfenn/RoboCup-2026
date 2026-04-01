@@ -106,7 +106,7 @@ float ColorSensor::getAvoidAngle() {
     return 180;
   }
 
-  // right = CH2
+  // left = CH2
   if (analogValues[2] >= greenValues[2] + buffer) {
     return 90;
   }
@@ -116,7 +116,7 @@ float ColorSensor::getAvoidAngle() {
     return 0;
   }
 
-  // left = CH6
+  // right = CH6
   if (analogValues[6] >= greenValues[6] + buffer) {
     return 270;
   }

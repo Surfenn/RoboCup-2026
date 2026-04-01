@@ -10,17 +10,18 @@ class ColorSensor {
     void printReadings();
     void printGreenValues();
     void updateReadings();
+    float getWarningAvoidAngle();
     float getAvoidAngle();
     uint16_t* getAnalogValues();
 
   private:
     static const uint8_t TCA_ADDR = 0x70;
     static const uint8_t TCS_ADDR = 0x29;
-    static const uint8_t NUM_SENSORS = 8;
-
-    uint16_t analogValues[NUM_SENSORS];
-    uint16_t greenValues[NUM_SENSORS];
+    static const uint8_t numChannels = 8;   // TCA9548A has 8 channels
     int buffer = 150;
+
+    uint16_t analogValues[numChannels];
+    uint16_t greenValues[numChannels];
 
     Adafruit_TCS34725 tcs = Adafruit_TCS34725(
       TCS34725_INTEGRATIONTIME_50MS,

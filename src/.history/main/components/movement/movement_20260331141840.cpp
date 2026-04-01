@@ -3,13 +3,6 @@
 #include "movement.h"
 #include <math.h>
 
-// ROBOT 1 White
-// const int dirFR = 1; //M1
-// const int dirBR = 1; //M2
-// const int dirBL = -1; //M3
-// const int dirFL = -1; //M4
-
-// Robot 2 No Tape
 const int dirFR = 1; //M1
 const int dirBR = 1; //M2
 const int dirBL = -1; //M3

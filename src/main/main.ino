@@ -2,14 +2,31 @@
 #include "./components/IR/IR.cpp"
 #include "./components/movement/movement.h"
 #include "./components/movement/movement.cpp"
+#include "./components/colorsensor/colorsensor.h"
+#include "./components/colorsensor/colorsensor.cpp"
 
 Movement m;
 IR ir;
+ColorSensor c;
 Compass cmp;
 
 void attack_ball() {
   int speed = 120;
 
+  // First update color sensors so white border always has priority
+  c.updateReadings();
+  float avoidAngle = c.getAvoidAngle();
+
+  // If white border is detected, do NOT chase the ball
+  if (avoidAngle != -1) {
+    Serial.print("White detected! Avoid angle: ");
+    Serial.println(avoidAngle);
+
+    m.basic_move_with_compass(avoidAngle, speed);
+    return;
+  }
+
+  // Otherwise do the normal IR ball chasing
   ir.updateReadings();
   float ballAngle = ir.getBallAngle();
 
@@ -34,19 +51,15 @@ void attack_ball() {
   m.basic_move_with_compass(ballAngle, speed);
 }
 
-// void setup() {  
-//   Serial.begin(9600);
-
-//   ir.initIR();
-//   m.initMovement();
-//   cmp.initialize();
-// }
-
-void setup() {  //for testing
+void setup() {
   Serial.begin(9600);
 
   ir.initIR();
   m.initMovement();
+  c.init();
+
+  // Add this back only if your movement code needs compass initialized
+  // cmp.initialize();
 }
 
 void loop() {
