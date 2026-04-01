@@ -11,7 +11,7 @@ ColorSensor c;
 Compass cmp;
 
 void attack_ball() {
-  int speed = 120;
+  int speed = 80;
 
   // First update color sensors so white border always has priority
   c.updateReadings();
@@ -65,3 +65,119 @@ void setup() {
 void loop() {
   attack_ball();
 }
+
+// #include <Wire.h>
+// #include "Adafruit_TCS34725.h"
+
+// #define TCA_ADDR 0x70
+// #define TCS_ADDR 0x29
+// #define NUM_SENSORS 8
+
+// Adafruit_TCS34725 tcs = Adafruit_TCS34725(
+//   TCS34725_INTEGRATIONTIME_50MS,
+//   TCS34725_GAIN_4X
+// );
+
+// uint16_t greenValues[NUM_SENSORS];
+// uint16_t clearValues[NUM_SENSORS];
+// uint16_t redValues[NUM_SENSORS];
+// uint16_t blueValues[NUM_SENSORS];
+
+// void tcaSelect(uint8_t channel) {
+//   if (channel > 7) return;
+
+//   Wire1.beginTransmission(TCA_ADDR);
+//   Wire1.write(1 << channel);
+//   Wire1.endTransmission();
+// }
+
+// bool i2cDetect(uint8_t addr) {
+//   Wire1.beginTransmission(addr);
+//   return (Wire1.endTransmission() == 0);
+// }
+
+// void setup() {
+//   Serial.begin(9600);
+//   while (!Serial) {}
+
+//   Wire1.begin();
+
+//   Serial.println("=== COLOR SENSOR CHANNEL TEST ===");
+//   Serial.println("This will print CH0 to CH7.");
+//   Serial.println("Move a white object over one sensor at a time.");
+//   Serial.println("Watch which channel changes most.");
+//   Serial.println();
+
+//   // Check multiplexer
+//   Serial.print("Checking TCA9548A at 0x70... ");
+//   if (i2cDetect(TCA_ADDR)) {
+//     Serial.println("FOUND");
+//   } else {
+//     Serial.println("NOT FOUND");
+//     while (1) {}
+//   }
+
+//   // Check each channel for a TCS3472
+//   for (int i = 0; i < NUM_SENSORS; i++) {
+//     tcaSelect(i);
+
+//     Serial.print("Checking TCS3472 on CH");
+//     Serial.print(i);
+//     Serial.print("... ");
+
+//     if (i2cDetect(TCS_ADDR)) {
+//       Serial.println("FOUND");
+
+//       if (!tcs.begin(TCS_ADDR, &Wire1)) {
+//         Serial.print("BUT tcs.begin() FAILED on CH");
+//         Serial.println(i);
+//       }
+//     } else {
+//       Serial.println("NOT FOUND");
+//     }
+//   }
+
+//   Serial.println();
+//   Serial.println("Start testing...");
+//   Serial.println();
+// }
+
+// void loop() {
+//   uint16_t r, g, b, c;
+
+//   for (int i = 0; i < NUM_SENSORS; i++) {
+//     tcaSelect(i);
+
+//     if (!i2cDetect(TCS_ADDR)) {
+//       redValues[i] = 0;
+//       greenValues[i] = 0;
+//       blueValues[i] = 0;
+//       clearValues[i] = 0;
+//       continue;
+//     }
+
+//     tcs.getRawData(&r, &g, &b, &c);
+
+//     redValues[i] = r;
+//     greenValues[i] = g;
+//     blueValues[i] = b;
+//     clearValues[i] = c;
+//   }
+
+//   Serial.println("--------------------------------------------------");
+//   for (int i = 0; i < NUM_SENSORS; i++) {
+//     Serial.print("CH");
+//     Serial.print(i);
+//     Serial.print("   R: ");
+//     Serial.print(redValues[i]);
+//     Serial.print("   G: ");
+//     Serial.print(greenValues[i]);
+//     Serial.print("   B: ");
+//     Serial.print(blueValues[i]);
+//     Serial.print("   C: ");
+//     Serial.println(clearValues[i]);
+//   }
+
+//   Serial.println();
+//   delay(300);
+// }
