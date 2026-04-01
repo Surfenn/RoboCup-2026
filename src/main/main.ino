@@ -11,7 +11,7 @@ ColorSensor c;
 Compass cmp;
 
 void attack_ball() {
-  int speed = 80;
+  int speed = 40;
 
   // First update color sensors so white border always has priority
   c.updateReadings();
