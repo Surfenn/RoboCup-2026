@@ -4,6 +4,7 @@
 #include "./components/movement/movement.cpp"
 #include "./components/colorsensor/colorsensor.h"
 #include "./components/colorsensor/colorsensor.cpp"
+#ifdef DEBUG_IR
 
 Movement m;
 IR ir;
@@ -30,6 +31,7 @@ void attack_ball() {
   ir.updateReadings();
   float ballAngle = ir.getBallAngle();
 
+  // getReadingsArr() returns a pointer to a static internal buffer — do NOT delete[] it.
   float* vals = ir.getReadingsArr();
   for (int i = 0; i < NUM_IR_PINS; i++) {
     Serial.print(i);
@@ -38,6 +40,7 @@ void attack_ball() {
     Serial.print("  ");
   }
   Serial.println();
+  #endif
 
   Serial.print("Ball angle: ");
   Serial.println(ballAngle);

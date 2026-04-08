@@ -13,20 +13,26 @@ void IR::initIR() {
 }
 
 void IR::updateReadings() {
+  double pwReadings[NUM_IR_PINS];  // stack buffer, read once
   double minVal = INT_MAX;
   double maxVal = INT_MIN;
 
   for (int i = 0; i < NUM_IR_PINS; i++) {
-    double pwReading = pulseIn(pins[i], HIGH, 800);
-    if (pwReading != 0 && pwReading < minVal) minVal = pwReading;
-    if (pwReading > maxVal) maxVal = pwReading;
+    pwReadings[i] = pulseIn(pins[i], HIGH, 800);
+    if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
+    if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
   }
 
   if (minVal == INT_MAX || maxVal == INT_MIN) {
-    for (int i = 0; i < NUM_IR_PINS; i++) {
-      readings[i] = 0;
-    }
+    for (int i = 0; i < NUM_IR_PINS; i++) readings[i] = 0;
+    return;
   }
+
+  double range = maxVal - minVal;
+  for (int i = 0; i < NUM_IR_PINS; i++) {
+    readings[i] = (pwReadings[i] == 0) ? 0 : (1.0 - ((pwReadings[i] - minVal) / range));
+  }
+}
 
   double range = maxVal - minVal;
   for (int i = 0; i < NUM_IR_PINS; i++) {
@@ -41,24 +47,32 @@ void IR::updateReadings() {
 }
 
 float* IR::getReadingsArr() {
-  double* pwReadings = getPWsArr();
-  float* pinReadings = new float[NUM_IR_PINS];
-
+  // Use static buffers instead of heap allocation.
+  // new[] on every loop() call exhausts SRAM in milliseconds — never use
+  // heap allocation inside a hot path on a microcontroller.
+  static double pwReadings[NUM_IR_PINS];
+  static float  pinReadings[NUM_IR_PINS];
+ 
+  // Fill pwReadings in-place (no allocation)
+  for (unsigned int i = 0; i < arrayLength(pins); i++) {
+    pwReadings[i] = pulseIn(pins[i], HIGH, 800);
+  }
+ 
   double minVal = INT_MAX;
   double maxVal = INT_MIN;
-
+ 
   for (int i = 0; i < NUM_IR_PINS; i++) {
     if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
     if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
   }
-
+ 
   if (minVal == INT_MAX || maxVal == INT_MIN) {
     for (int i = 0; i < NUM_IR_PINS; i++) {
       pinReadings[i] = 0;
     }
     return pinReadings;
   }
-
+ 
   double range = maxVal - minVal;
   for (int i = 0; i < NUM_IR_PINS; i++) {
     if (pwReadings[i] == 0) {
@@ -68,7 +82,7 @@ float* IR::getReadingsArr() {
       pinReadings[i] = (float)(1 - ((pwReadings[i] - minVal) / range));
     }
   }
-
+ 
   return pinReadings;
 }
 
@@ -104,7 +118,7 @@ float IR::getBallAngle() {
 }
 
 double* IR::getPWsArr() {
-  double* pinReadings = new double[NUM_IR_PINS];
+  static double pinReadings[NUM_IR_PINS];
   for (unsigned int i = 0; i < arrayLength(pins); i++) {
     pinReadings[i] = pulseIn(pins[i], HIGH, 800);
   }
