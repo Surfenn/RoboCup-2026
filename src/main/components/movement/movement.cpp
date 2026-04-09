@@ -94,13 +94,19 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
     return;
   }
 
-  theta += 90.0;// This needs to be commented outw for bot #2
 
 
 
   // // 1. Read current heading (° in [0,360)) relative to north
   float heading = compass.readCompass();
   double error = heading;  // heading needs to be negative for bot #2, and positive for bot #1
+
+  // wrap error to [-180, 180] to prevent spinning uncontrollably over the 0/360 boundary
+  if (error > 180.0) {
+    error -= 360.0;
+  } else if (error < -180.0) {
+    error += 360.0;
+  }
 
 
   // // 3. Dead-zone and proportional gain
@@ -110,20 +116,36 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
   // // 4. Compute rotational correction (zero inside dead-zone)
   double headingCorrection = 0.0;
   if (fabs(error) > deadzone) {
-  //   // Negative sign so that positive error (clockwise drift) yields counter-clockwise bias
+    // Negative sign so that positive error (clockwise drift) yields counter-clockwise bias
     headingCorrection = -Kp * error;
   }
 
-  // // catching ball
-  // if (!isBetween(0 - COMPASS_BUFF, 0 + COMPASS_BUFF, theta)) {
-  //   if (theta <= 180) {
-  //     theta = theta + 40;
-  //   } else {
-  //     theta = theta - 40;
-  //   }
-  // }
+  // 5. Catching ball (Orbit logic)
+  // Re-map theta to [-180, 180] for logical comparison
+  double orbitTheta = theta;
+  if (orbitTheta > 180.0) orbitTheta -= 360.0;
 
-  // 5. Existing translational wheel speeds (sinusoidal mixing)
+  if (fabs(orbitTheta) > COMPASS_BUFF) {
+    // If ball is on the right, push the move angle further back-right
+    if (orbitTheta > 0) {
+      theta += 40.0;
+    } 
+    // If ball is on the left, push the move angle further back-left
+    else {
+      theta -= 40.0;
+    }
+    
+    // Wrap theta back to [0, 360] just in case
+    if (theta >= 360.0) theta -= 360.0;
+    if (theta < 0.0) theta += 360.0;
+  }
+
+  // --- Apply the physical wheel axis offset for Bot #2 AFTER orbit math ---
+  theta -= 90.0;
+  if (theta < 0.0) theta += 360.0;
+  if (theta >= 360.0) theta -= 360.0;
+
+  // 6. Compute true kinematic translational wheel speeds
   double baseSpeeds[4] = {
     maxSpeed * sin(((theta - 90 + 40) * M_PI) / 180.0),  // FR
     maxSpeed * sin(((theta - 90 - 40) * M_PI) / 180.0),  // BR
@@ -136,6 +158,21 @@ void Movement::basic_move_with_compass(double theta, int maxSpeed) {
   for (int i = 0; i < 4; ++i) {
     speeds[i] = baseSpeeds[i]
                 + headingCorrection;  // auto‐correction toward north
+  }
+
+  // scale speeds relative to maxSpeed (imported from move())
+  double max = 0;
+  for (int i = 0; i < 4; i++) {
+    if (abs(speeds[i]) > max) {
+      max = abs(speeds[i]);
+    }
+  }
+
+  if (max != 0 && max != maxSpeed) {
+    double scale = (double)(maxSpeed / max);
+    for (int i = 0; i < 4; i++) {
+      speeds[i] *= scale;
+    }
   }
 
   // 7. Command the motors
@@ -183,25 +220,44 @@ void Movement::basic_move_with_compass_and_camera(double theta,
     error = heading;  // heading needs to be negative for bot #2, and positive for bot #1
   }
 
+  // wrap error to [-180, 180]
+  if (error > 180.0) {
+    error -= 360.0;
+  } else if (error < -180.0) {
+    error += 360.0;
+  }
+
   // 3. Dead-zone and proportional gain
   const double deadzone = 5.0;  // ±5° tolerated as “on target”
   const double Kp = 0.5;        // tuning: bigger → faster swing back
   double headingCorrection = 0.0;
   if (fabs(error) > deadzone) {
     // Negative sign so positive error → CCW bias, and vice versa
-    headingCorrection = Kp * error;
+    headingCorrection = -Kp * error;
   }
 
-  // catching ball
-  if (!isBetween(0 - COMPASS_BUFF, 0 + COMPASS_BUFF, theta)) {
-    if (theta <= 180) {
-      theta = theta + 40;
+  // 5. Catching ball (Orbit logic)
+  double orbitTheta = theta;
+  if (orbitTheta > 180.0) orbitTheta -= 360.0;
+
+  if (fabs(orbitTheta) > COMPASS_BUFF) {
+    if (orbitTheta > 0) {
+      theta += 40.0;
     } else {
-      theta = theta - 40;
+      theta -= 40.0;
     }
+    
+    // Wrap theta back to [0, 360]
+    if (theta >= 360.0) theta -= 360.0;
+    if (theta < 0.0) theta += 360.0;
   }
 
-  // 4. Compute your original translation wheel speeds
+  // --- Apply the physical wheel axis offset for Bot #2 AFTER orbit math ---
+  theta -= 90.0;
+  if (theta < 0.0) theta += 360.0;
+  if (theta >= 360.0) theta -= 360.0;
+
+  // 4. Compute true kinematic translational wheel speeds
   double baseSpeeds[4] = {
     maxSpeed * sin(((theta - 90 + 40) * M_PI) / 180.0),  // FR
     maxSpeed * sin(((theta - 90 - 40) * M_PI) / 180.0),  // BR
@@ -314,7 +370,7 @@ void Movement::move(double theta, int maxSpeed, bool avoid, float cameraRotation
     }
   }
 
-  if (max != 0 && max < maxSpeed) {
+  if (max != 0 && max != maxSpeed) {
     double scale = (double)(maxSpeed / max);
     for (int i = 0; i < 4; i++) {
       speeds[i] *= scale;

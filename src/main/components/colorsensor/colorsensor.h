@@ -20,7 +20,7 @@ class ColorSensor {
 
     uint16_t analogValues[NUM_SENSORS];
     uint16_t greenValues[NUM_SENSORS];
-    int buffer = 150;
+    int buffer = 300;
 
     Adafruit_TCS34725 tcs = Adafruit_TCS34725(
       TCS34725_INTEGRATIONTIME_50MS,

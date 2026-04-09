@@ -8,7 +8,7 @@ double readings[NUM_IR_PINS];
 
 void IR::initIR() {
   for (unsigned int i = 0; i < arrayLength(pins); i++) {
-    pinMode(pins[i], INPUT);
+    pinMode(pins[i], INPUT_PULLUP);
   }
 }
 
@@ -18,7 +18,24 @@ void IR::updateReadings() {
   double maxVal = INT_MIN;
 
   for (int i = 0; i < NUM_IR_PINS; i++) {
-    pwReadings[i] = pulseIn(pins[i], HIGH, 800);
+    unsigned long rawPulse = pulseIn(pins[i], HIGH, 2500);
+    
+    if (rawPulse == 0) {
+      if (digitalRead(pins[i]) == LOW) {
+        // Debounce: Wait 200us and double-check to mathematically guarantee it's not microscopic I2C/UART data line noise!
+        delayMicroseconds(200);
+        if (digitalRead(pins[i]) == LOW) {
+          pwReadings[i] = 1; // Genuine long-duration IR saturation holding LOW -> Strongest possible signal!
+        } else {
+          pwReadings[i] = 0; // Was just a high-speed data blip, safely ignore
+        }
+      } else {
+        pwReadings[i] = 0; // Truly zero signal
+      }
+    } else {
+      pwReadings[i] = rawPulse;
+    }
+
     if (pwReadings[i] != 0 && pwReadings[i] < minVal) minVal = pwReadings[i];
     if (pwReadings[i] > maxVal) maxVal = pwReadings[i];
   }
@@ -29,20 +46,9 @@ void IR::updateReadings() {
   }
 
   double range = maxVal - minVal;
+  if (range == 0.0) range = 1.0; // avoid division by zero
   for (int i = 0; i < NUM_IR_PINS; i++) {
     readings[i] = (pwReadings[i] == 0) ? 0 : (1.0 - ((pwReadings[i] - minVal) / range));
-  }
-}
-
-  double range = maxVal - minVal;
-  for (int i = 0; i < NUM_IR_PINS; i++) {
-    double pwReading = pulseIn(pins[i], HIGH, 800);
-    if (pwReading == 0) {
-      readings[i] = 0;
-    }
-    else {
-      readings[i] = (float)(1 - ((pwReading - minVal) / range));
-    }
   }
 }
 
@@ -74,6 +80,7 @@ float* IR::getReadingsArr() {
   }
  
   double range = maxVal - minVal;
+  if (range == 0.0) range = 1.0;
   for (int i = 0; i < NUM_IR_PINS; i++) {
     if (pwReadings[i] == 0) {
       pinReadings[i] = 0;
@@ -106,9 +113,16 @@ float IR::getBallAngle() {
     totalWeight += adjustedWeight;
   }
 
-  if (totalWeight == 0.0) return -1;
+  if (totalWeight == 0.0) {
+    return -1; // No ball detected
+  }
 
-  float angle = atan2(weightedY, weightedX) * 180.0 / M_PI;
+  // Smooth the raw Cartesian vectors (this natively handles 360-degree wrap-around safely)
+  float alpha = 0.35; // Lower is smoother but slower to adapt. 0.35 is a responsive median.
+  avgX = (alpha * weightedX) + ((1.0 - alpha) * avgX);
+  avgY = (alpha * weightedY) + ((1.0 - alpha) * avgY);
+
+  float angle = atan2(avgY, avgX) * 180.0 / M_PI;
   if (angle < 0) angle += 360.0;
 
   // angle += 30;   // adjust this value as needed

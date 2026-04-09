@@ -47,9 +47,11 @@ void ColorSensor::init() {
   // Take first readings
   updateReadings();
 
-  // Wait until front sensor gives a nonzero reading
-  while (analogValues[0] == 0) {
+  // Wait until front sensor gives a nonzero reading, hard breakout after 50 logic cycles so robot doesn't lock
+  int attempts = 0;
+  while (analogValues[0] == 0 && attempts++ < 50) {
     updateReadings();
+    delay(10);
   }
 
   // Save startup readings as baseline "green field" values

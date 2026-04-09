@@ -18,6 +18,7 @@ public:
 
 private:
   Adafruit_BNO055 bno{55, 0x28, &Wire1};
+  float initialOffset = 0.0;
 };
 
 #endif

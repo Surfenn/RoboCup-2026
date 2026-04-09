@@ -1,10 +1,10 @@
+#define DEBUG_IR
 #include "./components/IR/IR.h"
 #include "./components/IR/IR.cpp"
 #include "./components/movement/movement.h"
 #include "./components/movement/movement.cpp"
 #include "./components/colorsensor/colorsensor.h"
 #include "./components/colorsensor/colorsensor.cpp"
-#ifdef DEBUG_IR
 
 Movement m;
 IR ir;
@@ -12,7 +12,7 @@ ColorSensor c;
 Compass cmp;
 
 void attack_ball() {
-  int speed = 40;
+  int speed = 180;
 
   // First update color sensors so white border always has priority
   c.updateReadings();
@@ -31,6 +31,7 @@ void attack_ball() {
   ir.updateReadings();
   float ballAngle = ir.getBallAngle();
 
+#ifdef DEBUG_IR
   // getReadingsArr() returns a pointer to a static internal buffer — do NOT delete[] it.
   float* vals = ir.getReadingsArr();
   for (int i = 0; i < NUM_IR_PINS; i++) {
@@ -40,10 +41,12 @@ void attack_ball() {
     Serial.print("  ");
   }
   Serial.println();
-  #endif
+#endif
 
   Serial.print("Ball angle: ");
-  Serial.println(ballAngle);
+  Serial.print(ballAngle);
+  Serial.print("  |  Heading: ");
+  Serial.println(cmp.readCompass());
 
   if (ballAngle == -1) {
     m.brake();
@@ -61,11 +64,12 @@ void setup() {
   m.initMovement();
   c.init();
 
-  // Add this back only if your movement code needs compass initialized
-  // cmp.initialize();
+  // Initialize the exact compass vector
+  cmp.initialize();
 }
 
 void loop() {
+  // m.basic_move_with_compass(0, 120);
   attack_ball();
 }
 

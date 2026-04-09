@@ -12,6 +12,10 @@ class IR {
     void initIR();
     float getBallAngle();
 
+  private:
+    float avgX = 0.0;
+    float avgY = 0.0;
+
 };
 
 template <typename T, size_t N>
