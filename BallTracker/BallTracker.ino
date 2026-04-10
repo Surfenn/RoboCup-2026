@@ -20,9 +20,11 @@ bool isCalibrated = false;
 //  COLOR_BACKUP_MS milliseconds, then resumes ball tracking.
 // ============================================================
 const unsigned long COLOR_BACKUP_MS = 500; // backup duration (ms)
+const unsigned long COLOR_COOLDOWN_MS = 300; // cooldown after backup (ms)
 static bool inColorBackup = false;
 static unsigned long colorBackupStart = 0;
 static float colorBackupAngle = 0.0f;
+static unsigned long colorBackupEnd = 0;  // when last backup finished
 
 // ============================================================
 //  ---- TEST MODE ----
@@ -33,7 +35,7 @@ static float colorBackupAngle = 0.0f;
 //  Set to 4 for BALL TRACKING working code (Ignores all colour data).
 //  Set to 5 for COLOUR SENSOR TEST (avoidance only, prints raw readings).
 // ============================================================
-const int TEST_MODE = 0;
+const int TEST_MODE = 5;
 
 // ============================================================
 //  ---- SPEED & POWER TUNING ----
@@ -45,7 +47,7 @@ const int TEST_MODE = 0;
 //      kP_Rotation (e.g. 0.4) to maintain smooth movement.
 // ============================================================
 
-int basePursueSpeed = 45;
+int basePursueSpeed = 60;
 const float kP_Rotation = 0.7f;
 const float HEADING_DEADZONE = 7.0f;
 const float ANGLE_SMOOTH_ALPHA = 0.35f;
@@ -199,18 +201,22 @@ void normalLoop() {
   }
 
   // ---- 2. White-Line Detection (overrides ball tracking) ----
-  colorSensor.updateReadings();
-
   if (!inColorBackup) {
-    // Check if any sensor is seeing white right now
-    float avoidAngle = colorSensor.getAvoidAngle();
-    if (avoidAngle >= 0.0f) {
-      // Trigger backup
-      inColorBackup = true;
-      colorBackupStart = millis();
-      colorBackupAngle = avoidAngle;
-      Serial.print("[WHITE LINE] Backing away at angle: ");
-      Serial.println(avoidAngle, 0);
+    // Only read I2C when not backing up to prevent motor EMI from locking the bus
+    colorSensor.updateReadings();
+
+    // Don't re-check sensors during cooldown after a backup
+    if (millis() - colorBackupEnd >= COLOR_COOLDOWN_MS) {
+      // Check if any sensor is seeing white right now
+      float avoidAngle = colorSensor.getAvoidAngle();
+      if (avoidAngle >= 0.0f) {
+        // Trigger backup
+        inColorBackup = true;
+        colorBackupStart = millis();
+        colorBackupAngle = avoidAngle;
+        Serial.print("[WHITE LINE] Backing away at angle: ");
+        Serial.println(avoidAngle, 0);
+      }
     }
   }
 
@@ -223,6 +229,7 @@ void normalLoop() {
       return; // skip ball-tracking this iteration
     } else {
       inColorBackup = false; // backup complete — resume normal play
+      colorBackupEnd = millis(); // start cooldown
       Serial.println("[WHITE LINE] Backup complete, resuming.");
     }
   }
@@ -429,45 +436,57 @@ void ballOnlyLoop() {
 // so you can verify wiring and tune the buffer threshold.
 // ============================================================
 void colorSensorTestLoop() {
-  // ---- Compass Heading Hold (keep orientation during backup) ----
+  // ---- NO compass during colour test — isolate the colour behaviour ----
   float turnRate = 0;
-  if (isCalibrated) {
-    float currentHeading = compass.getHeading();
-    float error = initialHeading - currentHeading;
-    if (error > 180.0f)
-      error -= 360.0f;
-    if (error < -180.0f)
-      error += 360.0f;
-    if (fabsf(error) > HEADING_DEADZONE) {
-      turnRate = kP_Rotation * error;
-      turnRate = constrain(turnRate, -80, 80);
-    }
-  }
 
-  // ---- Read sensors ----
-  colorSensor.updateReadings();
-
-  // Print raw readings periodically for calibration
-  static unsigned long lastColorPrint = 0;
-  if (millis() - lastColorPrint >= 200) {
-    lastColorPrint = millis();
-    Serial.print("[COLOR] Raw: ");
-    colorSensor.printReadings();
-  }
-
-  // ---- White-line backup (same logic as normalLoop) ----
+  // ---- White-line backup ----
   static bool c5Backup = false;
   static unsigned long c5BackupStart = 0;
   static float c5BackupAngle = 0.0f;
+  static unsigned long c5BackupEnd = 0;
+  static unsigned long c5FirstTrigger = 0;   // for hard safety timeout
+
+  // Hard safety: if we've been in continuous avoidance for >2 seconds, force stop
+  if (c5Backup && (millis() - c5FirstTrigger > 2000)) {
+    c5Backup = false;
+    c5BackupEnd = millis();
+    robot.brake();
+    Serial.println("[COLOR TEST] SAFETY TIMEOUT — forced brake after 2 seconds.");
+    delay(15);
+    return;
+  }
 
   if (!c5Backup) {
-    float avoidAngle = colorSensor.getAvoidAngle();
-    if (avoidAngle >= 0.0f) {
-      c5Backup = true;
-      c5BackupStart = millis();
-      c5BackupAngle = avoidAngle;
-      Serial.print("[COLOR TEST] WHITE detected — backing at angle: ");
-      Serial.println(avoidAngle, 0);
+    // ---- Read sensors ONLY when not backing up ----
+    // Motors draw high current during backup, which can cause EMI on the I2C bus
+    // and lock up the Wire library + loop. We don't need color data while backing up!
+    colorSensor.updateReadings();
+
+    // Print raw readings periodically for calibration
+    static unsigned long lastColorPrint = 0;
+    if (millis() - lastColorPrint >= 200) {
+      lastColorPrint = millis();
+      Serial.print("[COLOR] Raw: ");
+      colorSensor.printReadings();
+    }
+
+    // Don't re-check sensors during cooldown after a backup
+    if (millis() - c5BackupEnd >= COLOR_COOLDOWN_MS) {
+      float avoidAngle = colorSensor.getAvoidAngle();
+      if (avoidAngle >= 0.0f) {
+        c5Backup = true;
+        c5BackupStart = millis();
+        c5FirstTrigger = millis();
+        c5BackupAngle = avoidAngle;
+
+        // Print detailed trigger info
+        Serial.print("[COLOR TEST] WHITE on angle ");
+        Serial.print(avoidAngle, 0);
+        Serial.print("  Readings: ");
+        colorSensor.printReadings();
+        Serial.print("[COLOR TEST] Baselines: ");
+        colorSensor.printGreenValues();
+      }
     }
   }
 
@@ -477,8 +496,12 @@ void colorSensorTestLoop() {
       delay(15);
       return;
     } else {
+      // Backup complete — BRAKE IMMEDIATELY
       c5Backup = false;
-      Serial.println("[COLOR TEST] Backup done — braking.");
+      c5BackupEnd = millis();
+      robot.brake();
+      Serial.print("[COLOR TEST] Backup done — BRAKED. Current readings: ");
+      colorSensor.printReadings();
     }
   }
 

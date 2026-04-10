@@ -1,6 +1,16 @@
 #include <Wire.h>
 #include "ColorSensor.h"
 
+// Minimum baseline value — if a sensor reads below this at startup
+// (e.g. robot started on a black backpack) we clamp to this value
+// so the threshold (baseline + buffer) isn't trivially exceeded.
+static const uint16_t MIN_BASELINE = 200;
+
+// Absolute minimum reading to even consider as "white".
+// Even if reading > baseline + buffer, if the raw value is below
+// this floor we ignore it — it's just ambient noise, not a white line.
+static const uint16_t MIN_WHITE_READING = 800;
+
 // ============================================================
 //  TCA9548A mux channel select — activates one I2C branch
 // ============================================================
@@ -65,12 +75,17 @@ void ColorSensor::init() {
     attempts++;
   }
 
-  // Capture green-field baseline
+  // Capture green-field baseline with minimum enforcement
   for (int i = 0; i < NUM_SENSORS; i++) {
     greenValues[i] = analogValues[i];
+    // Clamp low baselines — prevents dark-startup false positives
+    if (greenValues[i] < MIN_BASELINE) {
+      greenValues[i] = MIN_BASELINE;
+    }
   }
 
-  Serial.println("[ColorSensor] Baseline captured.");
+  Serial.print("[ColorSensor] Baseline captured: ");
+  printGreenValues();
 }
 
 // ============================================================
@@ -144,9 +159,39 @@ float ColorSensor::getAvoidAngle() {
   };
 
   for (int i = 0; i < NUM_SENSORS; i++) {
-    if (analogValues[i] >= (uint16_t)(greenValues[i] + buffer)) {
-      float avoid = sensorAngle[i] + 180.0f;
-      if (avoid >= 360.0f) avoid -= 360.0f;
+    uint16_t threshold = (uint16_t)(greenValues[i] + buffer);
+    // Two conditions must BOTH be true to trigger white:
+    //  1) Reading exceeds baseline + buffer  (relative check)
+    //  2) Reading exceeds MIN_WHITE_READING   (absolute floor)
+    // This prevents ambient light / dark-startup from false-triggering.
+    if (analogValues[i] >= threshold &&
+        analogValues[i] >= MIN_WHITE_READING) {
+      
+      // Explicit mapping of physical avoidance angles to fix kinematics quirks.
+      // - North/South (0, 180) are normal.
+      // - East/West (90, 270) are flipped by 180.
+      // - Diagonals (45, 135, 225, 315) are rotated by 90 on their axis.
+      // NOTE: If any diagonal backs *into* the line instead of away, just 
+      // add or subtract 180 from it in this array (e.g., change 315 to 135).
+      const float physicalAvoidMap[NUM_SENSORS] = {
+        180.0f,  // CH0 (Front)    
+        135.0f,  // CH1 (FrontRight)
+        90.0f,   // CH2 (Right)
+        45.0f,   // CH3 (BackRight)
+        0.0f,    // CH4 (Back)
+        315.0f,  // CH5 (BackLeft)
+        270.0f,  // CH6 (Left)
+        225.0f   // CH7 (FrontLeft)
+      };
+
+      float avoid = physicalAvoidMap[i];
+
+      Serial.print("[AVOID] CH"); Serial.print(i);
+      Serial.print(" val="); Serial.print(analogValues[i]);
+      Serial.print(" thresh="); Serial.print(threshold);
+      Serial.print(" min="); Serial.print(MIN_WHITE_READING);
+      Serial.print(" -> avoid "); Serial.println(avoid, 0);
+
       return avoid;
     }
   }

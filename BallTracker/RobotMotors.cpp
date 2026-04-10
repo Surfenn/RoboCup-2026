@@ -5,15 +5,24 @@
 RobotMotors::RobotMotors() {}
 
 void RobotMotors::begin() {
-  pinMode(motor_FR_PWM, OUTPUT);
+  // Direction pins — pure GPIO
   pinMode(motor_FR_Dir, OUTPUT);
-  pinMode(motor_BR_PWM, OUTPUT);
   pinMode(motor_BR_Dir, OUTPUT);
-  pinMode(motor_BL_PWM, OUTPUT);
   pinMode(motor_BL_Dir, OUTPUT);
-  pinMode(motor_FL_PWM, OUTPUT);
   pinMode(motor_FL_Dir, OUTPUT);
-  brake();
+  digitalWrite(motor_FR_Dir, LOW);
+  digitalWrite(motor_BR_Dir, LOW);
+  digitalWrite(motor_BL_Dir, LOW);
+  digitalWrite(motor_FL_Dir, LOW);
+
+  // PWM pins — prime the FlexPWM peripheral with duty=1 (0.4%).
+  // This initialises the timer once; we NEVER call pinMode(OUTPUT)
+  // on these pins again, to avoid a Teensy 4.1 FlexPWM re-init bug
+  // that corrupts the duty cycle on certain channels.
+  analogWrite(motor_FR_PWM, 1);
+  analogWrite(motor_BR_PWM, 1);
+  analogWrite(motor_BL_PWM, 1);
+  analogWrite(motor_FL_PWM, 1);
 }
 
 /**
@@ -62,34 +71,86 @@ void RobotMotors::drive(float angle, float speed, float turn) {
   if (abs(fl) > maxVal)
     maxVal = abs(fl);
 
-  if (maxVal > 255) {
-    float scale = 255.0 / maxVal;
+  // Normalize motor speeds so the maximum commanding wheel matches
+  // the peak desired magnitude (max of |speed| or |turn|).
+  // This guarantees uniform translational speed in all directions.
+  // Without this, cardinal directions only reached ~64% of requested speed!
+  float targetMax = max(abs(speed), abs(turn));
+  if (targetMax > 255.0f) targetMax = 255.0f;
+  
+  if (maxVal > 0.1f) {
+    float scale = targetMax / maxVal;
     fr *= scale;
     br *= scale;
     bl *= scale;
     fl *= scale;
   }
 
+  // Clamp minimum PWM to 1 so the FlexPWM stays active (never goes to 0)
+  int fr_pwm = max((int)abs(fr), 1);
+  int br_pwm = max((int)abs(br), 1);
+  int bl_pwm = max((int)abs(bl), 1);
+  int fl_pwm = max((int)abs(fl), 1);
+
+  // Determine directions
+  bool fr_dir = fr >= 0;    // HIGH if positive
+  bool br_dir = br >= 0;    // HIGH if positive
+  bool bl_dir = bl < 0;     // HIGH if negative (inverted logic)
+  bool fl_dir = fl < 0;     // HIGH if negative (inverted logic)
+
+  // Invert PWM for HIGH direction pins.
+  // Because of how the motor driver bridging works, when DIR is HIGH,
+  // the duty cycle actually runs in reverse (e.g. PWM=28 means 89% full throttle).
+  // Therefore, whenever DIR is HIGH, we MUST send (255 - pwm) so the motor
+  // actually gets the correct small duty cycle!
+  int final_fr_pwm = fr_dir ? (255 - fr_pwm) : fr_pwm;
+  int final_br_pwm = br_dir ? (255 - br_pwm) : br_pwm;
+  int final_bl_pwm = bl_dir ? (255 - bl_pwm) : bl_pwm;
+  int final_fl_pwm = fl_dir ? (255 - fl_pwm) : fl_pwm;
+
+  // Debug: print motor values periodically
+  static unsigned long lastMotorPrint = 0;
+  if (millis() - lastMotorPrint >= 250) {
+    lastMotorPrint = millis();
+    Serial.print("[MOTOR] angle="); Serial.print(angle, 0);
+    Serial.print(" FR:"); Serial.print(fr_pwm);
+    Serial.print(" BR:"); Serial.print(br_pwm);
+    Serial.print(" BL:"); Serial.print(bl_pwm);
+    Serial.print(" FL:"); Serial.println(fl_pwm);
+  }
+
   // Motor FR
-  analogWrite(motor_FR_PWM, (int)abs(fr));
-  digitalWrite(motor_FR_Dir, fr >= 0 ? HIGH : LOW);
+  analogWrite(motor_FR_PWM, final_fr_pwm);
+  digitalWrite(motor_FR_Dir, fr_dir ? HIGH : LOW);
 
   // Motor BR
-  analogWrite(motor_BR_PWM, (int)abs(br));
-  digitalWrite(motor_BR_Dir, br >= 0 ? HIGH : LOW);
+  analogWrite(motor_BR_PWM, final_br_pwm);
+  digitalWrite(motor_BR_Dir, br_dir ? HIGH : LOW);
 
-  // Motor BL (Inverted direction logic: LOW is positive)
-  analogWrite(motor_BL_PWM, (int)abs(bl));
-  digitalWrite(motor_BL_Dir, bl >= 0 ? LOW : HIGH);
+  // Motor BL
+  analogWrite(motor_BL_PWM, final_bl_pwm);
+  digitalWrite(motor_BL_Dir, bl_dir ? HIGH : LOW);
 
-  // Motor FL (Inverted direction logic: LOW is positive)
-  analogWrite(motor_FL_PWM, (int)abs(fl));
-  digitalWrite(motor_FL_Dir, fl >= 0 ? LOW : HIGH);
+  // Motor FL
+  analogWrite(motor_FL_PWM, final_fl_pwm);
+  digitalWrite(motor_FL_Dir, fl_dir ? HIGH : LOW);
 }
 
 void RobotMotors::brake() {
-  analogWrite(motor_FR_PWM, 0);
-  analogWrite(motor_BR_PWM, 0);
-  analogWrite(motor_BL_PWM, 0);
-  analogWrite(motor_FL_PWM, 0);
+  // Use duty=1 (0.4%) instead of 0 to keep the FlexPWM peripheral alive.
+  // The MDD3A motor driver cannot respond to 0.4% duty — motor is effectively stopped.
+  // This avoids a Teensy 4.1 bug where analogWrite(pin, 0) tears down the FlexPWM
+  // timer, and subsequent analogWrite(pin, N) re-initialises it with a corrupt
+  // duty cycle on certain channels (pins 4 and 7 / FlexPWM2.0 and FlexPWM1.3).
+  analogWrite(motor_FR_PWM, 1);
+  analogWrite(motor_BR_PWM, 1);
+  analogWrite(motor_BL_PWM, 1);
+  analogWrite(motor_FL_PWM, 1);
+
+  // Direction pins LOW for consistent idle state
+  digitalWrite(motor_FR_Dir, LOW);
+  digitalWrite(motor_BR_Dir, LOW);
+  digitalWrite(motor_BL_Dir, LOW);
+  digitalWrite(motor_FL_Dir, LOW);
 }
+
