@@ -16,15 +16,14 @@ bool isCalibrated = false;
 
 // ============================================================
 //  White-line backup state
-//  When any colour sensor hits white the robot backs away for
-//  COLOR_BACKUP_MS milliseconds, then resumes ball tracking.
 // ============================================================
-const unsigned long COLOR_BACKUP_MS = 500; // backup duration (ms)
-const unsigned long COLOR_COOLDOWN_MS = 300; // cooldown after backup (ms)
-static bool inColorBackup = false;
-static unsigned long colorBackupStart = 0;
-static float colorBackupAngle = 0.0f;
-static unsigned long colorBackupEnd = 0;  // when last backup finished
+const unsigned long COLOR_BACKUP_MS = 500;   // How long the robot drives backward after hitting a white line (ms).
+const unsigned long COLOR_COOLDOWN_MS = 300; // Time to wait after a backup before sensors are checked again (ms).
+static bool inColorBackup = false;           // State flag: true when the robot is currently in the "backing up" phase.
+static unsigned long colorBackupStart = 0;   // Timestamp (millis) of when the current backup started.
+static float colorBackupAngle = 0.0f;        // The specific angle the robot is moving to avoid the line.
+static unsigned long colorBackupEnd = 0;     // Timestamp (millis) of when the last backup finished; used for cooldown.
+static unsigned long colorFirstTrigger = 0;   // Timestamp of initial detection, used for hard safety timeout.
 
 // ============================================================
 //  ---- TEST MODE ----
@@ -35,7 +34,7 @@ static unsigned long colorBackupEnd = 0;  // when last backup finished
 //  Set to 4 for BALL TRACKING working code (Ignores all colour data).
 //  Set to 5 for COLOUR SENSOR TEST (avoidance only, prints raw readings).
 // ============================================================
-const int TEST_MODE = 5;
+const int TEST_MODE = 4;
 
 // ============================================================
 //  ---- SPEED & POWER TUNING ----
@@ -46,19 +45,18 @@ const int TEST_MODE = 5;
 //    - Performance Note: At speeds > 150, you may need to reduce
 //      kP_Rotation (e.g. 0.4) to maintain smooth movement.
 // ============================================================
-
-int basePursueSpeed = 60;
-const float kP_Rotation = 0.7f;
-const float HEADING_DEADZONE = 7.0f;
-const float ANGLE_SMOOTH_ALPHA = 0.35f;
-const float MIN_IR_STRENGTH = 35.0f;
-const float MAX_ANGLE_JUMP = 120.0f;
+int basePursueSpeed = 100;           // The target translation power (PWM) for normal ball chasing.
+const float kP_Rotation = 0.7f;      // Proportional gain for compass correction. Higher = snappier rotation.
+const float HEADING_DEADZONE = 7.0f; // Compass error threshold (degrees) before rotation correction kicks in.
+const float ANGLE_SMOOTH_ALPHA = 0.20f; // Alpha for low-pass angle filter. Lower = smoother/slower, Higher = twitchier/faster.
+const float MIN_IR_STRENGTH = 35.0f; // Minimum IR signal strength required to consider the ball "visible".
+const float MAX_ANGLE_JUMP = 120.0f; // Max degrees the ball angle can move in one frame before being ignored (noise filter).
 
 // ============================================================
 
-// Persistent angle smoother state
-float smoothX = 1.0f;
-float smoothY = 0.0f;
+// Persistent angle smoother state (unit vector components)
+float smoothX = 1.0f; // The X-component (cos) of our smoothed ball direction vector.
+float smoothY = 0.0f; // The Y-component (sin) of our smoothed ball direction vector.
 
 void setup() {
   Serial.begin(115200);
@@ -383,8 +381,14 @@ void ballOnlyLoop() {
     if (angError > 180.0f)
       angError -= 360.0f;
 
-    float baseOffset = angError * 0.8f;
-    baseOffset = constrain(baseOffset, -50.0f, 50.0f);
+    // Deadzone: if ball is within 15° of dead-ahead, drive straight at it.
+    // Without this, tiny sensor noise flips the offset sign every few ms,
+    // causing the robot to jitter left/right instead of going straight.
+    float baseOffset = 0.0f;
+    if (fabsf(angError) > 15.0f) {
+      baseOffset = angError * 0.8f;
+      baseOffset = constrain(baseOffset, -50.0f, 50.0f);
+    }
 
     float damp = 1.0f - ((rawStrength - 80.0f) / 170.0f);
     damp = constrain(damp, 0.0f, 1.0f);
