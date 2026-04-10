@@ -18,7 +18,7 @@ bool isCalibrated = false;
 //  White-line backup state
 // ============================================================
 const unsigned long COLOR_BACKUP_MS = 500;   // How long the robot drives backward after hitting a white line (ms).
-const unsigned long COLOR_COOLDOWN_MS = 300; // Time to wait after a backup before sensors are checked again (ms).
+const unsigned long COLOR_COOLDOWN_MS = 600; // Time to wait after a backup before sensors are checked again (ms).
 static bool inColorBackup = false;           // State flag: true when the robot is currently in the "backing up" phase.
 static unsigned long colorBackupStart = 0;   // Timestamp (millis) of when the current backup started.
 static float colorBackupAngle = 0.0f;        // The specific angle the robot is moving to avoid the line.
@@ -45,11 +45,11 @@ const int TEST_MODE = 4;
 //    - Performance Note: At speeds > 150, you may need to reduce
 //      kP_Rotation (e.g. 0.4) to maintain smooth movement.
 // ============================================================
-int basePursueSpeed = 100;           // The target translation power (PWM) for normal ball chasing.
-const float kP_Rotation = 0.7f;      // Proportional gain for compass correction. Higher = snappier rotation.
+int basePursueSpeed = 180;           // The target translation power (PWM) for normal ball chasing.
+const float kP_Rotation = 0.5f;      // Proportional gain for compass correction. Higher = snappier rotation.
 const float HEADING_DEADZONE = 7.0f; // Compass error threshold (degrees) before rotation correction kicks in.
-const float ANGLE_SMOOTH_ALPHA = 0.20f; // Alpha for low-pass angle filter. Lower = smoother/slower, Higher = twitchier/faster.
-const float MIN_IR_STRENGTH = 35.0f; // Minimum IR signal strength required to consider the ball "visible".
+const float ANGLE_SMOOTH_ALPHA = 0.15f; // Alpha for low-pass angle filter. Lower = smoother/slower, Higher = twitchier/faster.
+const float MIN_IR_STRENGTH = 15.0f; // Minimum IR signal strength required to consider the ball "visible".
 const float MAX_ANGLE_JUMP = 120.0f; // Max degrees the ball angle can move in one frame before being ignored (noise filter).
 
 // ============================================================
