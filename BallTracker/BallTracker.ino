@@ -1,3 +1,4 @@
+#include "ColorSensor.h"
 #include "IRRing.h"
 #include "RobotCompass.h"
 #include "RobotMotors.h"
@@ -8,16 +9,29 @@
 IRRing irRing;
 RobotCompass compass;
 RobotMotors robot;
+ColorSensor colorSensor;
 
 float initialHeading = 0.0;
 bool isCalibrated = false;
 
 // ============================================================
+//  White-line backup state
+//  When any colour sensor hits white the robot backs away for
+//  COLOR_BACKUP_MS milliseconds, then resumes ball tracking.
+// ============================================================
+const unsigned long COLOR_BACKUP_MS = 500; // backup duration (ms)
+static bool inColorBackup = false;
+static unsigned long colorBackupStart = 0;
+static float colorBackupAngle = 0.0f;
+
+// ============================================================
 //  ---- TEST MODE ----
-//  Set to 0 for normal ball-tracking.
+//  Set to 0 for NORMAL mode (ball-tracking + colour avoidance).
 //  Set to 1 for ANGLE-ONLY mode (prints ball angle, NO movement).
 //  Set to 2 for MOTOR TEST (drives N, E, S, W in sequence, no IR).
 //  Set to 3 for CONSTANT EAST DRIVE (drives 90 deg constantly for tuning).
+//  Set to 4 for BALL TRACKING working code (Ignores all colour data).
+//  Set to 5 for COLOUR SENSOR TEST (avoidance only, prints raw readings).
 // ============================================================
 const int TEST_MODE = 0;
 
@@ -27,7 +41,7 @@ const int TEST_MODE = 0;
 //    - Value Range: 0 to 255.
 //    - Current Value: 45 (Safe indoor walk-speed).
 //    - Competition: 150-200 (Aggressive play).
-//    - Performance Note: At speeds > 150, you may need to reduce 
+//    - Performance Note: At speeds > 150, you may need to reduce
 //      kP_Rotation (e.g. 0.4) to maintain smooth movement.
 // ============================================================
 
@@ -50,6 +64,9 @@ void setup() {
 
   irRing.begin();
   robot.begin();
+
+  // Colour sensors — Wire1 (SCL=pin16, SDA=pin17) via TCA9548A @ 0x70
+  colorSensor.init();
 
   if (!compass.begin()) {
     Serial.println("Ooops, no BNO055 detected!");
@@ -75,6 +92,13 @@ void setup() {
     Serial.println("=== CONSTANT EAST DRIVE MODE ===");
     Serial.println("Robot will drive at angle 90 (East) constantly.");
     delay(1000);
+  } else if (TEST_MODE == 4) {
+    Serial.println("=== BALL-ONLY MODE: No colour sensor. ===");
+    Serial.println("Original ball-tracking behaviour, colour sensor ignored.");
+  } else if (TEST_MODE == 5) {
+    Serial.println("=== COLOUR SENSOR TEST MODE ===");
+    Serial.println("Robot brakes until white is detected, then backs away.");
+    Serial.println("Raw sensor readings printed every 200 ms.");
   }
 }
 
@@ -159,7 +183,7 @@ void angleOnlyLoop() {
 void normalLoop() {
   irRing.update();
 
-  // ---- 1. Compass Heading Hold ----
+  // ---- 1. Compass Heading Hold (always computed, used in all states) ----
   float turnRate = 0;
   if (isCalibrated) {
     float currentHeading = compass.getHeading();
@@ -168,14 +192,42 @@ void normalLoop() {
       error -= 360.0f;
     if (error < -180.0f)
       error += 360.0f;
-
     if (fabsf(error) > HEADING_DEADZONE) {
       turnRate = kP_Rotation * error;
       turnRate = constrain(turnRate, -80, 80);
     }
   }
 
-  // ---- 2. Ball Tracking ----
+  // ---- 2. White-Line Detection (overrides ball tracking) ----
+  colorSensor.updateReadings();
+
+  if (!inColorBackup) {
+    // Check if any sensor is seeing white right now
+    float avoidAngle = colorSensor.getAvoidAngle();
+    if (avoidAngle >= 0.0f) {
+      // Trigger backup
+      inColorBackup = true;
+      colorBackupStart = millis();
+      colorBackupAngle = avoidAngle;
+      Serial.print("[WHITE LINE] Backing away at angle: ");
+      Serial.println(avoidAngle, 0);
+    }
+  }
+
+  if (inColorBackup) {
+    // Drive away from the white line for COLOR_BACKUP_MS ms
+    // Orientation is held by turnRate; only translation direction changes
+    if (millis() - colorBackupStart < COLOR_BACKUP_MS) {
+      robot.drive(colorBackupAngle, basePursueSpeed, turnRate);
+      delay(15);
+      return; // skip ball-tracking this iteration
+    } else {
+      inColorBackup = false; // backup complete — resume normal play
+      Serial.println("[WHITE LINE] Backup complete, resuming.");
+    }
+  }
+
+  // ---- 3. Ball Tracking ----
   float driveAngle = 0;
   float activeSpeed = 0;
   static int detectionStreak = 0;
@@ -227,7 +279,7 @@ void normalLoop() {
 
     if (driveAngle < 0)
       driveAngle += 360.0f;
-    if (driveAngle >= 360)
+    if (driveAngle >= 360.0f)
       driveAngle -= 360.0f;
 
     static unsigned long lastPrint = 0;
@@ -260,15 +312,194 @@ void normalLoop() {
   delay(15);
 }
 
+// ============================================================
+// BALL-ONLY MODE (TEST_MODE == 4)
+// Identical to the original normalLoop() BEFORE colour sensor
+// integration — compass heading hold + ball tracking, no colour.
+// ============================================================
+void ballOnlyLoop() {
+  irRing.update();
+
+  // ---- 1. Compass Heading Hold (always computed, used in all states) ----
+  float turnRate = 0;
+  if (isCalibrated) {
+    float currentHeading = compass.getHeading();
+    float error = initialHeading - currentHeading;
+    if (error > 180.0f)
+      error -= 360.0f;
+    if (error < -180.0f)
+      error += 360.0f;
+    if (fabsf(error) > HEADING_DEADZONE) {
+      turnRate = kP_Rotation * error;
+      turnRate = constrain(turnRate, -80, 80);
+    }
+  }
+
+  // ---- 3. Ball Tracking ----
+  float driveAngle = 0;
+  float activeSpeed = 0;
+  static int detectionStreak = 0;
+
+  if (irRing.isBallDetected()) {
+    float rawAngle = irRing.getBallAngle();
+    float rawStrength = irRing.getBallStrength();
+
+    if (rawStrength >= MIN_IR_STRENGTH) {
+      float currentSmoothAngle = atan2f(smoothY, smoothX) * (180.0f / PI);
+      if (currentSmoothAngle < 0)
+        currentSmoothAngle += 360.0f;
+      float diff = fabsf(rawAngle - currentSmoothAngle);
+      if (diff > 180.0f)
+        diff = 360.0f - diff;
+
+      if (diff < MAX_ANGLE_JUMP || rawStrength > 150.0f) {
+        float rawRad = rawAngle * (PI / 180.0f);
+        smoothX = (1.0f - ANGLE_SMOOTH_ALPHA) * smoothX +
+                  ANGLE_SMOOTH_ALPHA * cosf(rawRad);
+        smoothY = (1.0f - ANGLE_SMOOTH_ALPHA) * smoothY +
+                  ANGLE_SMOOTH_ALPHA * sinf(rawRad);
+      }
+    }
+
+    detectionStreak++;
+
+    float ballAngle = atan2f(smoothY, smoothX) * (180.0f / PI);
+    if (ballAngle < 0)
+      ballAngle += 360.0f;
+
+    if (detectionStreak >= 2) {
+      activeSpeed = basePursueSpeed;
+    }
+
+    // Adaptive Orbital Logic
+    float angError = ballAngle;
+    if (angError > 180.0f)
+      angError -= 360.0f;
+
+    float baseOffset = angError * 0.8f;
+    baseOffset = constrain(baseOffset, -50.0f, 50.0f);
+
+    float damp = 1.0f - ((rawStrength - 80.0f) / 170.0f);
+    damp = constrain(damp, 0.0f, 1.0f);
+
+    float finalOffset = baseOffset * damp;
+    driveAngle = ballAngle + finalOffset;
+
+    if (driveAngle < 0)
+      driveAngle += 360.0f;
+    if (driveAngle >= 360.0f)
+      driveAngle -= 360.0f;
+
+    static unsigned long lastPrint = 0;
+    if (millis() - lastPrint >= 50) {
+      lastPrint = millis();
+      Serial.print("Ball:");
+      Serial.print(ballAngle, 0);
+      Serial.print(" Drive:");
+      Serial.print(driveAngle, 0);
+      Serial.print(" Str:");
+      Serial.print(rawStrength, 0);
+      Serial.print(" MaxIdx:");
+      Serial.print(irRing.getStrongestSensor());
+      Serial.print(" Turn:");
+      Serial.println(turnRate, 0);
+    }
+
+  } else {
+    detectionStreak = 0;
+    smoothX = smoothX * 0.80f + 1.0f * 0.20f;
+    smoothY = smoothY * 0.80f;
+    static unsigned long lastMissedPrint = 0;
+    if (millis() - lastMissedPrint >= 200) {
+      lastMissedPrint = millis();
+      Serial.println("Ball -> Stale (Braking)");
+    }
+  }
+
+  robot.drive(driveAngle, activeSpeed, turnRate);
+  delay(15);
+}
+
+// ============================================================
+// COLOUR SENSOR TEST MODE (TEST_MODE == 5)
+// Just colour avoidance — no ball tracking.
+// Robot brakes until a white line is detected; then it backs
+// away at basePursueSpeed for COLOR_BACKUP_MS ms.
+// Raw green readings from all 8 channels are printed every 200 ms
+// so you can verify wiring and tune the buffer threshold.
+// ============================================================
+void colorSensorTestLoop() {
+  // ---- Compass Heading Hold (keep orientation during backup) ----
+  float turnRate = 0;
+  if (isCalibrated) {
+    float currentHeading = compass.getHeading();
+    float error = initialHeading - currentHeading;
+    if (error > 180.0f)
+      error -= 360.0f;
+    if (error < -180.0f)
+      error += 360.0f;
+    if (fabsf(error) > HEADING_DEADZONE) {
+      turnRate = kP_Rotation * error;
+      turnRate = constrain(turnRate, -80, 80);
+    }
+  }
+
+  // ---- Read sensors ----
+  colorSensor.updateReadings();
+
+  // Print raw readings periodically for calibration
+  static unsigned long lastColorPrint = 0;
+  if (millis() - lastColorPrint >= 200) {
+    lastColorPrint = millis();
+    Serial.print("[COLOR] Raw: ");
+    colorSensor.printReadings();
+  }
+
+  // ---- White-line backup (same logic as normalLoop) ----
+  static bool c5Backup = false;
+  static unsigned long c5BackupStart = 0;
+  static float c5BackupAngle = 0.0f;
+
+  if (!c5Backup) {
+    float avoidAngle = colorSensor.getAvoidAngle();
+    if (avoidAngle >= 0.0f) {
+      c5Backup = true;
+      c5BackupStart = millis();
+      c5BackupAngle = avoidAngle;
+      Serial.print("[COLOR TEST] WHITE detected — backing at angle: ");
+      Serial.println(avoidAngle, 0);
+    }
+  }
+
+  if (c5Backup) {
+    if (millis() - c5BackupStart < COLOR_BACKUP_MS) {
+      robot.drive(c5BackupAngle, basePursueSpeed, turnRate);
+      delay(15);
+      return;
+    } else {
+      c5Backup = false;
+      Serial.println("[COLOR TEST] Backup done — braking.");
+    }
+  }
+
+  // No white line detected — hold still
+  robot.brake();
+  delay(15);
+}
+
 void loop() {
   if (TEST_MODE == 3) {
-    robot.drive(90, 60, 0); // Constants East drive at speed 60
+    robot.drive(90, 60, 0); // Constant East drive at speed 60
     delay(15);
   } else if (TEST_MODE == 2) {
     motorTestLoop();
   } else if (TEST_MODE == 1) {
     angleOnlyLoop();
+  } else if (TEST_MODE == 4) {
+    ballOnlyLoop();
+  } else if (TEST_MODE == 5) {
+    colorSensorTestLoop();
   } else {
-    normalLoop();
+    normalLoop(); // TEST_MODE == 0: ball tracking + colour avoidance
   }
 }
