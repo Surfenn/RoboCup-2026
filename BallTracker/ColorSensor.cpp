@@ -4,12 +4,12 @@
 // Minimum baseline value — if a sensor reads below this at startup
 // (e.g. robot started on a black backpack) we clamp to this value
 // so the threshold (baseline + buffer) isn't trivially exceeded.
-static const uint16_t MIN_BASELINE = 200;
+static const uint16_t MIN_BASELINE = 400;
 
 // Absolute minimum reading to even consider as "white".
 // Even if reading > baseline + buffer, if the raw value is below
 // this floor we ignore it — it's just ambient noise, not a white line.
-static const uint16_t MIN_WHITE_READING = 800;
+static const uint16_t MIN_WHITE_READING = 1000;
 
 // ============================================================
 //  TCA9548A mux channel select — activates one I2C branch
